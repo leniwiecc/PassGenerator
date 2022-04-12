@@ -120,10 +120,5 @@ class PassGenerator():
 
           self.password.insert(4, 'skopikowano')
           
-
-
-
-
-          
-
-PassGenerator()
+if __name__=="__main__":
+     PassGenerator()
