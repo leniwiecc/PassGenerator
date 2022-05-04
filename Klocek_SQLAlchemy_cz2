@@ -1,0 +1,117 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Untitled3.ipynb",
+      "provenance": [],
+      "authorship_tag": "ABX9TyO3wpfapIkoh7sVHQXNmwEq",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/leniwiecc/PassGenerator/blob/main/Klocek_SQLAlchemy_cz2\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "VUcnCJ_JybAS"
+      },
+      "outputs": [],
+      "source": [
+        ""
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Cześć, jak wam poszło zapoznanie się z częścią pierwszą? Dziś będzie więcej teorii, dużo opisów i wiele przykładów. Chciałbym żeby każdy zrozumiał dzisiejszą lekcję wiec jak coś będzie niejasne to pisać śmiało. Mogę to wyjaśniać tak długo aż sam w końcu zrozumiem :)\n",
+        "\n",
+        "Po co nam w ogóle bazy danych z wieloma tabelami? Nie wystarczy nam tylko jedna tabelka? Przecież wszystko możemy trzymać w jednej tabeli excel. Od wersji 2007 mamy do dyspozycji 1 048 576 wierszy i 16 384 kolumn. Wystarczy żeby zapisać wszystkie dane. Jest to jakieś rozwiązanie: możemy filtrować, sumować z filtrami, sortować, używać formatowania warunkowego więc już wizualnie możemy zobaczyć jakieś konkretne dane. Ale z drugiej strony: otwieranie takiego pliku zajmuje sporo czasu, każda zmiana i zapis zawiesi nam komputer. Prosty przykład: niedawno mieliśmy powszechny spis ludności. Ok 35 000 000 polaków to już za dużo dla excela - ale pomińmy to; załużmy że mamy nielimitowaną 'długość' tej tabeli i super komputer który to obsługuje bez zająknięcia. Mamy kolumny: imię, nazwisko, data urodzenia, miejsce urodzenia, aktualny adres i wiele, wiele, wiele innych kolumn. Najdłuższe nazwy miejscowości w Polsce to **Sobienie Kiełczewskie Pierwsze** i **Przedmieście Szczebrzeszyńskie** (sprawdźcie jeżeli nie wierzycie). Ile razy byśmy powtarzali wpisywanie tych nazw? Przecież od tego można sobie palce połamać. A jeżeli ktoś po naszej zmianie siądzie do tego pliku i będzie kontynuował wpisywanie danych i zrobi literówkę w nazwie? No i już nazwy sosnowiec i Sosnoiwec komputer będzie inaczej tłumaczył i cała statystyka może być zakłamana. Ktoś powie że możemy przecież sobie zrobić liste rozwijaną w excelu- super. To już jest pierwszy krok w kierunku baz dancych. Ile będzie takich kolumn które możemy tak zastąpić? Miasto, zawód, wykształcenie, wyznanie?? No dobra, powiedzmy że te wszystkie powtarzające się dane mamy już w listach rozwijanych ale to ciągle nie rozwiązuje naszego problemu z działaniem całej aplikacji. Nie zawsze potrzebujemy wczytać cały zestaw dancych żeby na nich pracować. Nie potrzebujemy otwierać całego pliku, dodawać filtry, sortować i szukać liczby spawaczy ze Szczecina. Nie interesuje nas gdzie mieszkają (poza tym że w Szczecinie), czy są wege i w jakim są wieku. Excel 'wczytuje' od razu całe dane i dopiero później możemy na nich pracować.  \n",
+        "Inny przykład: lista uczniów w szkole. W excelu przy każdym uczniu mielibyśmy też kolumnę z nazwką klasy, nazwiskiem wychowacy, nazwą profilu klasy. A już nie wspominam o systemie zapisu ocen.  W modelu bazy danych mielibyśmy takie tabele:\n",
+        " >>uczeń ( tam nam wystarczy tylko imie, nazwisko, oczywiście numer ID i specjalna kolumna id_klasy <- wrócimy do tego tematu za chwilę). \n",
+        "\n",
+        " >>klasa: kolumny id (wiadomo), opis, profil, wychowaca, ewentualnie jakieś inne dane\n",
+        "\n",
+        " >>lista przedmiotów: kolumna id i nazwa + jakiś opis\n",
+        "\n",
+        " >>nauczyciele: kolumna id (to już mam nadzieję jest jasne i nie muszę potwrzać), przedmiot (przyjmijmy że każdy nauczyciel może uczyć tylko 1 przedmiotu), ewntualnie jeszcze możemy przypisać nauczyciela jako opiekuna danej klasy.\n",
+        " \n",
+        " >> oceny: tu już bedzie ciekawie: mamy id ucznia, id przedmiotu, id nauczyciela, ocena, data. No i mamy wpis: 124, 3, 4, 5, Czyli uczeń numerze 124 dostał z przedmiotu o id 3 od nauczyciela o id 4 (może być kilku nauczycieli matematyki i akurat na zastępstwie ktoś akurat robił kartkówkę) dostał 5. "
+      ],
+      "metadata": {
+        "id": "0_hszqp9ymX2"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Czy już domyślacie się jaki jest sens rozbijania danych na tyle tabel? Wróćmy jeszcze do tej kolumny id_klasy. Wiemy co to jest id <- klucz główny (primary key). Taki pesel który jednoznacznie określa dany wpis. Te id_klasy też jest takim kluczem który jednozacznie określa daną klasę (np '3a'. Nie może być jednocześnie dwóch klas nazwanych 3a. ) tylko to jest odniesienie do innej tabeli i nazywa się to Foregin key <- klucz obcy. Jak nazwa wskazuje: jest to klucz określający jakieś inne wartości. Jak mamy ucznia Grzesia N i wiemy że jest w klasie 3a to pod tą nazwą (3a) kryje się tylko jedna klasa i jak sobie otworzymy tabelę klasy i odszukamy wiersz '3a' to wiemy już kto jest opiekunem, jaki jest profil klasy itp. To połączenie miedzy tabelami (uczeń <-> klasa) nazywa się **relacją**. To jest bardzo ważne żeby dobrze to zrozumieć, może to być się wydawać trudne i zagmatwane ale postaram się to jakoś prosto wyjaśnić."
+      ],
+      "metadata": {
+        "id": "jRlDiJ6R8MvZ"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Ogólenie mamy 3 typy relacji. 1do1, 1do wielu i wiele do wielu. Przyjrzyjmy się każdej z osobna:"
+      ],
+      "metadata": {
+        "id": "rqlSfDkerWZ-"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        ">> Relacja 1 do 1. Oznacza to że wpis z tabeli odnosi sie tylko do jednego wpsiu z innej tabel. I tylko do jednej. Jeden wpis nie może określać dwóch lub 3 innych wartości. Najlepiej to wytłumaczyć na przykładzie: Mamy tabelę użykowników (typu facebook) i tam mamy opcję dodania reliacji (związku). Nie można mieć jednocześnie żony i  kochanki. Jeżeli jesteś w związku z Kasią to Kasia też jest w związku z Tobą. Nie może tak być że Kasia jest mężem Tomka a Ty jesteś mężem Kasi :D (pomijamy opcje 'to skomplikowane'). Nie możesz mieć dwóch żon. Zarówno na facebooku jak i oficjalnie urzedowo.  Nie: albo wolny albo jeden mąż/żona. Innej opcji nie ma. Inny przykład: mamy tabelę klientów id, imie, nazwisko. I druga tabela tajne_dane: id_osoby, pesel, nr dowou. Ktoś powie że to możemy trzymać w jednej tabeli. Tak, zgadza się ale zaraz spece od cs, rodo będą krzyczeć. I słusznie. Np w mojej firmie jako zwykły użytkownik nie mam dostępu do tych wrażliwych danych i jak chcę zobaczyć dane klineta to mam tylko imię, telefon. I tyle. Tylko pani z HR ma dostęp do tych wrażliwych danych. Jedne pesel określa jedną osobę i jedna osoba ma tylko 1 pesel. Proste: 1 pesel określa 1 osobę. 1 osoba ma tylko 1 pesel. Inny przykład: Państwo - Stolica. Każde państwo ma tylko 1 stolicę i to miasto jest przypisane tylko do jedego kraju. 1 do 1. (czy na sali jest jakiś geograf który powie teraz: hola, hola!! Jest 15 państ które są wyjątkiem -  nie wiem, to nie moja dziedzina. Chcecie to sobie sprawdźcie, nie chcecie: to musicie uwieżyć mi że tak jest). Wracając do tematu: jedno państo - jedna stolica. Jedna stolica -> jedno państwo. Jedne do jeden. "
+      ],
+      "metadata": {
+        "id": "Uw7gNMsv_j4s"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        ">> Ralacja 1 do wielu. Oznacza to, że jeden wpis z tabeli może być połączony z wieloma innymi wpisami z innej tabeli. Przykłady: jeden użytkownik może mieć wiele wpisów (np na bloogu) ale dany wpis ma tylko 1 autora. Wiele wpisów - jeden użytkownik. Proste? Inny przykad: tabela klasa, tabela uczeń. Jeden uczeń należy do jedenj klasy ale w tej klasie jest odniesienie do wielu uczniów. Jedna klasa: wielu uczniów. Ale jeden uczeń tylko 1 klasa. Kolejny przykład: Państwa, miasta. Państwo ma wiele miast ale miasto należy tylko do jednego kraju. (zakładając że Cieszyn i Czestki Cieszyn to dwa różne miasta!!). Rozumiecie? Jeden wpis w tabeli może określać wiele innych danych ale z drugiej strony: te dane mogą odnosić się tylko do jedengo wpisu. Jeżeli nie czaicie tego to piszcie śmiało. Podajcie swoje przykłady takiej relacji."
+      ],
+      "metadata": {
+        "id": "ZXpqmaUrJUqt"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        ">> Relacja wiele do wielu. To jest najtrudniejsza relacja i wymaga specjnaego traktowania. Ale praktyka będzie póżniej. Narazie przykłady żeby zorzumieć samą ideę relacji. Jeden produkt (z tabeli produkty) może być w wielu zamówieniach (tabela zamówienia) ale w drugą stronę też: w wielu zamówieniach może pojawiać się ten sam produkt. Inny przykład: samochód może mieć kilku właścicieli i ja jako właściciel danego samochodu mogę być też właścielelem innego pojazdu. Wiele pojazdów: wiele właścieli. Jedne wpis na blogu może mieć wiele kategorii/ tagów . I w drugą stronę: jedna kategoria odnosi się do wielu wpisów. "
+      ],
+      "metadata": {
+        "id": "pOekIbZrLfzw"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "To tyle wstępu. W następnej części zrobimy już coś konketnego. Nie bójcie się pytać i komentować. "
+      ],
+      "metadata": {
+        "id": "zlCk0hdTM2M9"
+      }
+    }
+  ]
+}
